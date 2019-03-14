@@ -1,13 +1,16 @@
 #include "view.h"
 #include "player.h"
-#include "keys.h"
-#include "tools.h"
+#include "role.h"
+#include "shop_item.h"
+#include "character.h" //人物触发事件
+#include "tool.h"
 #include <QKeyEvent>
 
 extern Player player;
+extern Role parameter;
 extern Tools tools;
-extern Keys keys;
-extern int map[14][14][10];
+extern ShopItem items;
+extern int map[14][14][1];
 
 View::View(QWidget *parent) : QGraphicsView(parent) {         // Initialize the status to "welcome"
     status = "welcome";
@@ -28,14 +31,30 @@ void View::keyPressEvent(QKeyEvent * event) {         // This function will auto
         emit change();
     } else if (status == "ending" || status == "fail")         // One click then quit
         emit quit();
-    else if (status == "fight")         // One click then if fail then quit else back to main
-        keyFight();
+    else if (status == "like")         // One click then if fail then quit else back to main
+        keyLike(event);
     else if (status == "shop")         // Read key and decide which stuff player bought
         keyShop(event);
     else if (status == "welcome")         // Read key and choose to start a new game or load
         keyWelcome(event);
     else if (status == "select")         // Read key and choose sex
         keySelect(event);
+    else if (status == "lecture")
+        keylecture(event);
+    else if (status == "prof1")
+        keyprof1(event);
+    else if (status == "prof2")
+        keyprof2(event);
+    else if (status == "prof3")
+        keyprof3(event);
+    else if (status == "eat")
+        keyeat(event);
+    else if (status == "study")
+        keystudy(event);
+    else if (status == "sleep")
+        keysleep(event);
+    else if (status == "movie")
+        keymovie(event);
 }
 
 void View::keyMain(QKeyEvent * event) {
@@ -49,7 +68,8 @@ void View::keyMain(QKeyEvent * event) {
             if (access(player.GetPosx(), player.GetPosy()+1))
                 emit move(0, +1);
             player.SetToward(3);
-            break;
+            #include <QKeyEvent>
+        break;
         case Qt::Key_Left:      // Move left
             if (access(player.GetPosx()-1, player.GetPosy()))
                 emit move(-1, 0);
@@ -59,12 +79,6 @@ void View::keyMain(QKeyEvent * event) {
             if (access(player.GetPosx()+1, player.GetPosy()))
                 emit move(+1, 0);
             player.SetToward(4);
-            break;
-        case Qt::Key_B:         // Look up monster book
-            if (tools.GetBook()) {
-                SetStatus("book");
-                emit events("book");
-            }
             break;
         case Qt::Key_S:         // Save data
             emit events("save");
@@ -83,7 +97,8 @@ void View::keyMain(QKeyEvent * event) {
             break;
     }
 }
-
+void View::keyShop(QKeyEvent *event){};
+/*
 void View::keyShop(QKeyEvent *event) {
     switch (event->key()) {
         case Qt::Key_1:     // Hp + 30 , Money - 50
@@ -136,6 +151,7 @@ void View::keyShop(QKeyEvent *event) {
             break;
     }
 }
+*/
 
 void View::keyWelcome(QKeyEvent *event) {
     switch (event->key()) {
@@ -176,10 +192,10 @@ void View::keySelect(QKeyEvent *event) {
     }
 }
 
-void View::keyFight() {
-    if (player.GetHp() == 0) {
-        SetStatus("fail");
-        emit events("fail");
+void View::keyLike(QKeyEvent *event) {
+    if ( parameter.GetLike() == 100) {
+        SetStatus("love");
+        emit events("love");
     } else {
         SetStatus("main");
         emit change();
@@ -189,28 +205,78 @@ void View::keyFight() {
 void View::action() {
     switch (next_step) {
         case 3:
-            keys.SetYellow(qMax(keys.GetYellow()-1, 0));
-            break;
+            SetStatus("lecture");
+            parameter.SetEnergy(parameter.GetEnerge()-10);
+            player.SetIQ(player.GetIQ()+5);
+            player.SetEQ(player.GetEQ()+5);
+        break;
+
         case 4:
-            keys.SetBlue(qMax(keys.GetBlue()-1, 0));
-            break;
+            SetStatus("prof1");
+            parameter.SetEnergy(parameter.GetEnerge()-15);
+            player.SetIQ(player.GetIQ()+2);
+            player.SetEQ(player.GetEQ()+2);
+            player.SetCharm(player.GetCharm()+2);
+            parameter.SetMoney(parameter.GetMoney()+20);
+        break;
+
         case 5:
-            keys.SetRed(qMax(keys.GetRed()-1, 0));
-            break;
+            SetStatus("prof2");
+            parameter.SetEnergy(parameter.GetEnerge()-15);
+            player.SetIQ(player.GetIQ()+10);
+            player.SetCharm(player.GetCharm()+2);
+            parameter.SetMoney(parameter.GetMoney()+10);
+        break;
+
         case 6:
-            keys.SetYellow(keys.GetYellow()+1);
-            break;
+            SetStatus("prof1");
+            parameter.SetEnergy(parameter.GetEnerge()-1);
+            player.SetIQ(player.GetIQ()+2);
+            player.SetEQ(player.GetEQ()+2);
+            player.SetCharm(player.GetCharm()+10);
+        break;
+
         case 7:
-            keys.SetBlue(keys.GetBlue()+1);
-            break;
+            SetStatus("eat");
+            parameter.SetEnergy(parameter.GetEnerge()+15);
+            parameter.SetMoney(parameter.GetMoney()-20);
+            parameter.SetEat(parameter.GetEat()+1);
+        break;
+
         case 8:
-            keys.SetRed(keys.GetRed()+1);
-            break;
+            SetStatus("study");
+            parameter.SetEnergy(parameter.GetEnerge()-10);
+            player.SetIQ(player.GetIQ()+3);
+            player.SetEQ(player.GetEQ()+1);
+            player.SetCharm(player.GetCharm()+1);
+        break;
+
+        case 9:
+            SetStatus("sleep");
+            parameter.SetDay(parameter.GetDay()+1);
+            parameter.SetMoney(player.GetMoney()+100);
+
+            if(parameter.GetEat()==0)
+            {
+                if (player.GetSex()==0){parameter.SetEnergy(40);}
+                else{parameter.SetEnergy(35);}
+            }
+            else
+            {
+                parameter.SetEat(parameter.GetEat()-1);
+                if (player.GetSex()==0){parameter.SetEnergy(50);}
+                else{parameter.SetEnergy(45);}
+            }
+
+        break;
+
         case 10:
-            // Oldman's tip
-            SetStatus("tip");
-            emit events("tip1");
-            break;
+            SetStatus("movie");
+        break;
+
+
+
+
         case 11:
         case 12:
         case 13:
@@ -223,54 +289,22 @@ void View::action() {
         case 20:
         case 21:
         case 22:
+        /*
         case 23:
-            // Fight with normalmonster
-            SetStatus("fight");
+
+            SetStatus("");
             emit fight(next_step);
             break;
-        case 24:
-            // Fight with special monster
-            player.SetHp(player.GetHp()/3);
-            break;
-        case 25:
-            // Fight with special monster
-            player.SetDefend(player.GetDefend()/3);
-            break;
-        case 26:
-            // Fight with special monster
-            player.SetAttack(player.GetAttack()/3);
-            break;
+        */
         case 27:
             // Sorceress's tip
             SetStatus("tip");
             emit events("tip2");
             break;
         case 28:
-            player.SetMoney(player.GetMoney()+15);
+            player.SetMoney(player.GetMoney()+100);
             break;
-        case 29:
-            player.SetHp(player.GetHp()+18);
-            break;
-        case 30:
-            player.SetHp(player.GetHp()+30);
-            break;
-        case 31:
-            tools.SetSword(1);
-            player.SetAttack(player.GetAttack()+10);
-            break;
-        case 32:
-            player.SetAttack(player.GetAttack()+3);
-            break;
-        case 33:
-            tools.SetShield(1);
-            player.SetDefend(player.GetDefend()+8);
-            break;
-        case 34:
-            player.SetDefend(player.GetDefend()+2);
-            break;
-        case 35:
-            tools.SetBook(1);
-            break;
+
         case 51:
             // Shopping
             SetStatus("shop");
@@ -278,11 +312,11 @@ void View::action() {
             break;
         case 80:
             // Upstairs
-            player.SetFloor(player.GetFloor()+1);
+            player.SetPlace(player.GetPlace()+1);
             break;
         case 90:
             // downstairs
-            player.SetFloor(player.GetFloor()-1);
+            player.SetPlace(player.GetPlace()-1);
             break;
         case 99:
             // End of the game
@@ -295,11 +329,10 @@ void View::action() {
 }
 
 int View::access(int x, int y) {          // Check if map(x,y) is access or not
-    int tmp = map[x][y][player.GetFloor()];
+    int tmp = map[x][y][player.GetPlace()];
     next_step = tmp;
-    if (tmp == 0 || (tmp > 5 && tmp < 10) || (tmp > 10 && tmp < 27) || (tmp > 27 && tmp < 35) || tmp == 59 ||
-        (tmp == 3 && keys.GetYellow() > 0) || (tmp == 4 && keys.GetBlue() > 0) || (tmp == 5 && keys.GetRed() > 0)) {
-        map[x][y][player.GetFloor()] = 0;
+    if (tmp >= 500) {
+        map[x][y][player.GetPlace()] = 0;
         return 1;
     } else
         return 0;
